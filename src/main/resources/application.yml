@@ -1,0 +1,33 @@
+server:
+  port: ${outcfg.server.port}
+  tomcat:
+    uri-encoding: UTF-8
+
+spring:
+  http:
+    encoding:
+      charset: UTF-8
+      force: true
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: task
+      username: task
+      password: ["1","2","3","4","5","6"]
+
+#打开actuator的所有端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+swagger:
+  docket:
+    actuator:
+      title: actuator模块
+      base-package: org.springframework.boot.actuate.endpoint.web.servlet
+    task:
+      title: task模块
+      base-package: com.task.server.controller

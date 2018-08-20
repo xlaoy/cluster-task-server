@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: cluster-task-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/xlaoy/springconfig-repo.git
+          search-paths: /
+          username: xlaoy
+          password: zhangyijun123
+        prefix: /config
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery:123456@127.0.0.1:9200/eureka/
+  instance:
+    prefer-ip-address: true
+    metadata-map:
+      version: v1.0.0
