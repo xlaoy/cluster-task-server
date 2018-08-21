@@ -27,10 +27,15 @@ public class SecheduledRunnable implements Runnable {
     private RestTemplate restTemplate;
     private ISecheduledExecuteLogRepository executeLogRepository;
     private Date beginTime;
+    private Long exceCount;
 
     private static final String TASK_CLIENT_EXECUTE_URL = "/task_client/execute_secheduled_task";
 
     public SecheduledRunnable() {
+    }
+
+    public void setExceCount(Long exceCount) {
+        this.exceCount = exceCount;
     }
 
     public SecheduledRunnable(String taskId, String serviceName) {
@@ -73,6 +78,7 @@ public class SecheduledRunnable implements Runnable {
         executeLog.setId(logId);
         executeLog.setTaskId(taskId);
         executeLog.setBeginTime(beginTime);
+        executeLog.setExceCount(exceCount);
         ServiceInstance instance = this.loadBalancerClient.choose(serviceName.toUpperCase());
         if(instance == null) {
             executeLog.setStatus(SecheduledExecuteLog.SEND_REQUEST_FAILURE);
@@ -87,7 +93,7 @@ public class SecheduledRunnable implements Runnable {
             URI sendUri = URI.create(String.format("http://%s:%s" + TASK_CLIENT_EXECUTE_URL, instance.getHost(), instance.getPort()));
             executeLog.setSendRequestTime(new Date());
             try {
-                restTemplate.postForObject(sendUri, sendDTO, void.class);
+                restTemplate.postForObject(sendUri, sendDTO, String.class);
                 executeLog.setStatus(SecheduledExecuteLog.SEND_REQUEST_SUCCESS);
             } catch (Exception e) {
                 logger.error("发送定时任务请求返回异常，logId=" + logId, e);

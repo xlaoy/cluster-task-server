@@ -51,10 +51,11 @@ public class TaskExecuteService {
             return;
         }
         for(SecheduledTaskInfo taskInfo : taskList) {
+            long exceCount = taskInfo.getExceCount() + 1;
             Query updateQuery = Query.query(Criteria.where("id").is(taskInfo.getId())
                     .and("exceCount").is(taskInfo.getExceCount()));
             Date nextTime = new CronSequenceGenerator(taskInfo.getCron()).next(taskInfo.getNextExceTime());
-            Update update = Update.update("nextExceTime", nextTime).set("exceCount", taskInfo.getExceCount() + 1);
+            Update update = Update.update("nextExceTime", nextTime).set("exceCount", exceCount);
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, SecheduledTaskInfo.class);
             if(result.getModifiedCount() == 1) {
                 SecheduledRunnable runnable = new SecheduledRunnable(taskInfo.getId(), taskInfo.getServiceName());
@@ -63,6 +64,7 @@ public class TaskExecuteService {
                 runnable.setBeginTime(new Date());
                 runnable.setClassName(taskInfo.getClassName());
                 runnable.setExecuteLogRepository(executeLogRepository);
+                runnable.setExceCount(exceCount);
                 sendRequestkExecutor.execute(runnable);
             }
         }

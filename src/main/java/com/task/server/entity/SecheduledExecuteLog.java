@@ -29,6 +29,8 @@ public class SecheduledExecuteLog {
     private String targetHostPort;
     //执行状态
     private String status;
+    //
+    private Long exceCount;
     //开始时间
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
     private Date beginTime;
