@@ -2,8 +2,7 @@ package com.task.server.service;
 
 import com.mongodb.client.result.UpdateResult;
 import com.task.server.entity.SecheduledTaskInfo;
-import com.task.server.repository.ISecheduledExecuteLogRepository;
-import com.task.server.repository.ISecheduledTaskInfoRepository;
+import com.task.server.repository.ITaskExecuteLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
@@ -36,7 +35,7 @@ public class TaskExecuteService {
     @Autowired
     private ThreadPoolTaskExecutor sendRequestkExecutor;
     @Autowired
-    private ISecheduledExecuteLogRepository executeLogRepository;
+    private ITaskExecuteLogRepository executeLogRepository;
 
     /**
      * 执行定时任务
@@ -58,12 +57,11 @@ public class TaskExecuteService {
             Update update = Update.update("nextExceTime", nextTime).set("exceCount", exceCount);
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, SecheduledTaskInfo.class);
             if(result.getModifiedCount() == 1) {
-                SecheduledRunnable runnable = new SecheduledRunnable(taskInfo.getId(), taskInfo.getServiceName());
+                SecheduledRunnable runnable = new SecheduledRunnable();
                 runnable.setLoadBalancerClient(loadBalancerClient);
                 runnable.setRestTemplate(restTemplate);
-                runnable.setBeginTime(new Date());
-                runnable.setClassName(taskInfo.getClassName());
                 runnable.setExecuteLogRepository(executeLogRepository);
+                runnable.setTaskInfo(taskInfo);
                 runnable.setExceCount(exceCount);
                 sendRequestkExecutor.execute(runnable);
             }

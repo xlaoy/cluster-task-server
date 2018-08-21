@@ -39,9 +39,6 @@ public class SecheduledTaskInfo {
     private Date updateTime;
     //激活状态
     private String activation;
-    //首次执行时间
-    @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
-    private Date fristExceTime;
     //下次执行时间
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
     private Date nextExceTime;

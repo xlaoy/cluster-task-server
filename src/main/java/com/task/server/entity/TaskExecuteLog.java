@@ -13,18 +13,22 @@ import java.util.Date;
  */
 @Data
 @Document(collection = "secheduled_execute_log")
-public class SecheduledExecuteLog {
+public class TaskExecuteLog {
 
     public static final String SEND_REQUEST_SUCCESS= "send_request_success";
     public static final String SEND_REQUEST_FAILURE = "send_request_failure";
-    public static final String EXECUTEING = "executeing";
     public static final String EXECUTE_SUCCESS = "execute_success";
     public static final String EXECUTE_FAILURE = "execute_failure";
+
+    public static final String SECHEDULED = "secheduled";
+    public static final String DELAY = "delay";
 
     @Id
     private String id;
     //服务名称
     private String taskId;
+    //任务类型
+    private String taskType;
     //目标机器
     private String targetHostPort;
     //执行状态
@@ -37,7 +41,7 @@ public class SecheduledExecuteLog {
     //发送请求时间
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
     private Date sendRequestTime;
-    //
+    //请求体
     private String requestBody;
     //收到响应时间
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)

@@ -1,8 +1,9 @@
 package com.task.server.service;
 
 import com.task.server.dto.SecheduledRequestDTO;
-import com.task.server.entity.SecheduledExecuteLog;
-import com.task.server.repository.ISecheduledExecuteLogRepository;
+import com.task.server.entity.SecheduledTaskInfo;
+import com.task.server.entity.TaskExecuteLog;
+import com.task.server.repository.ITaskExecuteLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.ServiceInstance;
@@ -20,13 +21,10 @@ public class SecheduledRunnable implements Runnable {
 
     private Logger logger = LoggerFactory.getLogger(SecheduledRunnable.class);
 
-    private String taskId;
-    private String className;
-    private String serviceName;
+    private SecheduledTaskInfo taskInfo;
     private LoadBalancerClient loadBalancerClient;
     private RestTemplate restTemplate;
-    private ISecheduledExecuteLogRepository executeLogRepository;
-    private Date beginTime;
+    private ITaskExecuteLogRepository executeLogRepository;
     private Long exceCount;
 
     private static final String TASK_CLIENT_EXECUTE_URL = "/task_client/execute_secheduled_task";
@@ -38,33 +36,16 @@ public class SecheduledRunnable implements Runnable {
         this.exceCount = exceCount;
     }
 
-    public SecheduledRunnable(String taskId, String serviceName) {
-        this.taskId = taskId;
-        this.serviceName = serviceName;
-    }
-
-    public void setClassName(String className) {
-        this.className = className;
-    }
-
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
-    }
-
-    public void setServiceName(String serviceName) {
-        this.serviceName = serviceName;
+    public void setTaskInfo(SecheduledTaskInfo taskInfo) {
+        this.taskInfo = taskInfo;
     }
 
     public void setLoadBalancerClient(LoadBalancerClient loadBalancerClient) {
         this.loadBalancerClient = loadBalancerClient;
     }
 
-    public void setExecuteLogRepository(ISecheduledExecuteLogRepository executeLogRepository) {
+    public void setExecuteLogRepository(ITaskExecuteLogRepository executeLogRepository) {
         this.executeLogRepository = executeLogRepository;
-    }
-
-    public void setBeginTime(Date beginTime) {
-        this.beginTime = beginTime;
     }
 
     public void setRestTemplate(RestTemplate restTemplate) {
@@ -73,31 +54,39 @@ public class SecheduledRunnable implements Runnable {
 
     @Override
     public void run() {
-        SecheduledExecuteLog executeLog = new SecheduledExecuteLog();
+        TaskExecuteLog executeLog = new TaskExecuteLog();
         String logId = UUID.randomUUID().toString().replace("-", "");
         executeLog.setId(logId);
-        executeLog.setTaskId(taskId);
-        executeLog.setBeginTime(beginTime);
+        executeLog.setTaskId(taskInfo.getId());
+        executeLog.setBeginTime(new Date());
         executeLog.setExceCount(exceCount);
-        ServiceInstance instance = this.loadBalancerClient.choose(serviceName.toUpperCase());
+        executeLog.setTaskType(TaskExecuteLog.SECHEDULED);
+        ServiceInstance instance = null;
+        try {
+            instance = this.loadBalancerClient.choose(taskInfo.getServiceName().toUpperCase());
+        } catch (Exception e) {
+            logger.error(taskInfo.getServiceName() + " 选择服务实例异常，logId=" + logId, e);
+            executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
+            executeLog.setResult(taskInfo.getServiceName() + " 选择服务实例异常");
+        }
         if(instance == null) {
-            executeLog.setStatus(SecheduledExecuteLog.SEND_REQUEST_FAILURE);
-            executeLog.setResult(serviceName + " 没有发现可用服务实例");
+            executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
+            executeLog.setResult(taskInfo.getServiceName() + " 没有发现可用服务实例");
         } else {
             executeLog.setTargetHostPort(instance.getHost() + ":" + instance.getPort());
-            SecheduledRequestDTO sendDTO = new SecheduledRequestDTO();
-            sendDTO.setClassName(className);
-            sendDTO.setLogId(logId);
-            sendDTO.setParameters("{}");
-            executeLog.setRequestBody(sendDTO.toString());
-            URI sendUri = URI.create(String.format("http://%s:%s" + TASK_CLIENT_EXECUTE_URL, instance.getHost(), instance.getPort()));
+            SecheduledRequestDTO requestDTO = new SecheduledRequestDTO();
+            requestDTO.setClassName(taskInfo.getClassName());
+            requestDTO.setLogId(logId);
+            requestDTO.setParameters("{}");
+            executeLog.setRequestBody(requestDTO.toString());
+            URI uri = URI.create("http://" + instance.getHost() + ":" + instance.getPort() + TASK_CLIENT_EXECUTE_URL);
             executeLog.setSendRequestTime(new Date());
             try {
-                restTemplate.postForObject(sendUri, sendDTO, String.class);
-                executeLog.setStatus(SecheduledExecuteLog.SEND_REQUEST_SUCCESS);
+                restTemplate.postForObject(uri, requestDTO, String.class);
+                executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_SUCCESS);
             } catch (Exception e) {
                 logger.error("发送定时任务请求返回异常，logId=" + logId, e);
-                executeLog.setStatus(SecheduledExecuteLog.SEND_REQUEST_FAILURE);
+                executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
                 executeLog.setResult(e.getMessage());
             } finally {
                 executeLog.setReceiveResponseTime(new Date());

@@ -1,16 +1,10 @@
 package com.task.server.task;
 
-import com.task.server.config.BeanConfig;
-import com.task.server.service.SecheduledRunnable;
+import com.task.server.service.DelayTaskArchiveService;
 import com.task.server.service.TaskExecuteService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  * Created by Administrator on 2018/8/20 0020.
@@ -20,6 +14,8 @@ public class TaskJob {
 
     @Autowired
     private TaskExecuteService executeService;
+    @Autowired
+    private DelayTaskArchiveService delayTaskArchiveService;
 
     /**
      * 执行定时任务
@@ -34,11 +30,16 @@ public class TaskJob {
      */
     @Scheduled(fixedDelay = 100)
     public void executeDelayTask() {
-        try {
-            Thread.sleep(3000);
-        } catch (Exception e) {
 
-        }
+    }
+
+    /**
+     * 延迟任务归档
+     * 每半小时跑一次
+     */
+    @Scheduled(cron = "0 0/30 * * * ? ")
+    public void delayTaskArchive() {
+        delayTaskArchiveService.archive();
     }
 
 }

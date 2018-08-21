@@ -1,8 +1,8 @@
 package com.task.server.service;
 
-import com.task.server.dto.SecheduledResponseDTO;
-import com.task.server.entity.SecheduledExecuteLog;
-import com.task.server.repository.ISecheduledExecuteLogRepository;
+import com.task.server.dto.SecheduledResultDTO;
+import com.task.server.entity.TaskExecuteLog;
+import com.task.server.repository.ITaskExecuteLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,17 +16,17 @@ import java.util.Optional;
 public class TaskFeedbackService {
 
     @Autowired
-    private ISecheduledExecuteLogRepository secheduledExecuteLogRepository;
+    private ITaskExecuteLogRepository executeLogRepository;
 
 
-    public void secheduledFeedback(String logId, SecheduledResponseDTO responseDTO) {
-        Optional<SecheduledExecuteLog> optional = secheduledExecuteLogRepository.findById(logId);
+    public void secheduledFeedback(String logId, SecheduledResultDTO resultDTO) {
+        Optional<TaskExecuteLog> optional = executeLogRepository.findById(logId);
         if(optional.isPresent()) {
-            SecheduledExecuteLog executeLog = optional.get();
-            executeLog.setStatus(responseDTO.getStatus());
-            executeLog.setResult(responseDTO.getResult());
+            TaskExecuteLog executeLog = optional.get();
+            executeLog.setStatus(resultDTO.getStatus());
+            executeLog.setResult(resultDTO.getResult());
             executeLog.setFeedbackTime(new Date());
-            secheduledExecuteLogRepository.save(executeLog);
+            executeLogRepository.save(executeLog);
         }
     }
 

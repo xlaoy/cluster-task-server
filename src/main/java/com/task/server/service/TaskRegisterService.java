@@ -1,14 +1,23 @@
 package com.task.server.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.task.server.dto.DelayRegisterDTO;
+import com.task.server.dto.DelayRegisterResultDTO;
+import com.task.server.entity.DelayTaskInfo;
 import com.task.server.entity.SecheduledRegisterLog;
 import com.task.server.exception.JSONException;
+import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ISecheduledRegisterLogRepository;
 import com.task.server.repository.ISecheduledTaskInfoRepository;
 import com.task.server.dto.SecheduledRegisterDTO;
 import com.task.server.entity.SecheduledTaskInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -23,10 +32,16 @@ import java.util.*;
 @Component
 public class TaskRegisterService {
 
+    private Logger logger = LoggerFactory.getLogger(this.getClass());
+
     @Autowired
     private ISecheduledTaskInfoRepository secheduledTaskInfoRepository;
     @Autowired
     private ISecheduledRegisterLogRepository secheduledRegisterLogRepository;
+    @Autowired
+    private IDelayTaskInfoRepository delayTaskInfoRepository;
+    @Autowired
+    private MongoTemplate mongoTemplate;
     @Autowired
     private ObjectMapper mapper;
 
@@ -90,7 +105,6 @@ public class TaskRegisterService {
                 taskInfo.setActivation(SecheduledTaskInfo.ACTIVATE);
                 CronSequenceGenerator cronSequenceGenerator = new CronSequenceGenerator(newTask.getCron());
                 Date exceTime = cronSequenceGenerator.next(now);
-                taskInfo.setFristExceTime(exceTime);
                 taskInfo.setNextExceTime(exceTime);
                 taskInfo.setExceCount(0l);
                 secheduledTaskInfoRepository.save(taskInfo);
@@ -110,6 +124,9 @@ public class TaskRegisterService {
                 boolean update = false;
                 if(!optional.get().getCron().equals(oldTask.getCron())) {
                     oldTask.setCron(optional.get().getCron());
+                    CronSequenceGenerator cronSequenceGenerator = new CronSequenceGenerator(oldTask.getCron());
+                    Date exceTime = cronSequenceGenerator.next(now);
+                    oldTask.setNextExceTime(exceTime);
                     update = true;
                 }
                 if(SecheduledTaskInfo.INVALID.equals(oldTask.getActivation())) {
@@ -129,4 +146,74 @@ public class TaskRegisterService {
         }
     }
 
+    /**
+     * 注册延迟任务
+     * @param registerDTO
+     */
+    public DelayRegisterResultDTO registerDelayTask(DelayRegisterDTO registerDTO) {
+        DelayRegisterResultDTO resultDTO = new DelayRegisterResultDTO();
+        List<DelayRegisterDTO.DelayInfo> delayInfoList = registerDTO.getDelayInfoList();
+        if(CollectionUtils.isEmpty(delayInfoList)) {
+            resultDTO.setCode(DelayRegisterResultDTO.PARAMETER_ERROR);
+            resultDTO.setMessage("任务列表不能为空");
+            logger.error(resultDTO.getMessage());
+            return resultDTO;
+        }
+        for(DelayRegisterDTO.DelayInfo delayInfo : delayInfoList) {
+            Query query = Query.query(Criteria.where("executeServiceName").is(delayInfo.getExecuteServiceName())
+                    .and("bizName").is(delayInfo.getBizName())
+                    .and("bizParameters").is(delayInfo.getBizParameters())
+                    .and("executeTime").is(delayInfo.getExecuteTime())
+                    .and("status").is(DelayTaskInfo.NORMAL)
+            );
+            if(mongoTemplate.exists(query, DelayTaskInfo.class)){
+                resultDTO.setCode(DelayRegisterResultDTO.TASK_EXISTS);
+                resultDTO.setMessage("任务已存在，不能重复注册，任务参数：" + delayInfo.toString());
+                logger.error(resultDTO.getMessage());
+                return resultDTO;
+            }
+        }
+        List<String> taskIdList = new ArrayList<>();
+        for(DelayRegisterDTO.DelayInfo delayInfo : delayInfoList) {
+            DelayTaskInfo taskInfo = new DelayTaskInfo();
+            taskInfo.setRegisterServiceName(registerDTO.getRegisterServiceName());
+            taskInfo.setRegisterHostAndPort(registerDTO.getRegisterHostAndPort());
+            taskInfo.setExecuteServiceName(delayInfo.getExecuteServiceName());
+            taskInfo.setBizName(delayInfo.getBizName());
+            taskInfo.setBizParameters(delayInfo.getBizParameters());
+            taskInfo.setCanExecute(DelayTaskInfo.YES);
+            taskInfo.setStatus(DelayTaskInfo.NORMAL);
+            taskInfo.setCreateTime(new Date());
+            taskInfo.setExecuteTime(delayInfo.getExecuteTime());
+            taskInfo.setExceCount(0);
+            delayTaskInfoRepository.save(taskInfo);
+            taskIdList.add(taskInfo.getId());
+        }
+        resultDTO.setCode(DelayRegisterResultDTO.SUCCESS);
+        resultDTO.setMessage("注册成功");
+        resultDTO.setTaskIdList(taskIdList);
+        return resultDTO;
+    }
+
+    /**
+     * 取消延迟任务
+     * @param taskIdList
+     */
+    public void cancelDelayTask(List<String> taskIdList) {
+        if(CollectionUtils.isEmpty(taskIdList)) {
+            return;
+        }
+        for(String taskId : taskIdList) {
+            Optional<DelayTaskInfo> optional = delayTaskInfoRepository.findById(taskId);
+            if(optional.isPresent()) {
+                DelayTaskInfo taskInfo = optional.get();
+                if(DelayTaskInfo.NORMAL.equals(taskInfo.getStatus())) {
+                    taskInfo.setCanExecute(DelayTaskInfo.NOT);
+                    taskInfo.setStatus(DelayTaskInfo.CANCEL);
+                    taskInfo.setRemark("业务系统请求取消");
+                    delayTaskInfoRepository.save(taskInfo);
+                }
+            }
+        }
+    }
 }
