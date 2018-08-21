@@ -27,6 +27,8 @@ public class TaskExecuteLog {
     private String id;
     //服务名称
     private String taskId;
+    //分片id
+    private String pieceId;
     //任务类型
     private String taskType;
     //目标机器
