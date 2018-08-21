@@ -1,7 +1,9 @@
 package com.task.server.service;
 
 import com.mongodb.client.result.UpdateResult;
+import com.task.server.entity.DelayTaskInfo;
 import com.task.server.entity.SecheduledTaskInfo;
+import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ITaskExecuteLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,4 +70,34 @@ public class TaskExecuteService {
         }
     }
 
+    /**
+     * 执行延迟任务
+     */
+    public void executeDelayTask() {
+        Date now = new Date();
+        Query query = Query.query(Criteria.where("status").is(DelayTaskInfo.WAITING)
+                .and("executeTime").lte(now));
+        List<DelayTaskInfo> taskList = mongoTemplate.find(query, DelayTaskInfo.class);
+        if(CollectionUtils.isEmpty(taskList)) {
+            return;
+        }
+        for(DelayTaskInfo taskInfo : taskList) {
+            Long exceCount = taskInfo.getExceCount() + 1;
+            Query updateQuery = Query.query(Criteria.where("id").is(taskInfo.getId())
+                    .and("exceCount").is(taskInfo.getExceCount()));
+            Update update = Update.update("status", DelayTaskInfo.EXECUTEING).set("exceCount", exceCount);
+            UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, DelayTaskInfo.class);
+            if(result.getModifiedCount() == 1) {
+                DelayRunnable runnable = new DelayRunnable();
+                runnable.setLoadBalancerClient(loadBalancerClient);
+                runnable.setRestTemplate(restTemplate);
+                runnable.setExecuteLogRepository(executeLogRepository);
+                runnable.setTaskInfo(taskInfo);
+                runnable.setExceCount(exceCount);
+                runnable.setMongoTemplate(mongoTemplate);
+                runnable.setRetryCount(5);
+                sendRequestkExecutor.execute(runnable);
+            }
+        }
+    }
 }

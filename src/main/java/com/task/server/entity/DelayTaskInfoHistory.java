@@ -27,8 +27,6 @@ public class DelayTaskInfoHistory {
     private String bizName;
     //业务参数
     private String bizParameters;
-    //能否执行
-    private String canExecute;
     //任务状态
     private String status;
     //创建时间
@@ -38,7 +36,7 @@ public class DelayTaskInfoHistory {
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
     private Date executeTime;
     //执行次数
-    private Integer exceCount;
+    private Long exceCount;
     //备注
     private String remark;
 }

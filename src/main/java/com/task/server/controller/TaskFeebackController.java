@@ -1,6 +1,6 @@
 package com.task.server.controller;
 
-import com.task.server.dto.SecheduledResultDTO;
+import com.task.server.dto.TaskResultDTO;
 import com.task.server.service.TaskFeedbackService;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +20,8 @@ public class TaskFeebackController {
 
     @PostMapping("/task_server/task_feedback/{logId}")
     @ApiOperation(response = void.class, value = "定时任务执行结果反馈")
-    public void registerSecheduledTask(@PathVariable("logId")String logId, @RequestBody SecheduledResultDTO resultDTO) {
-        feedbackService.secheduledFeedback(logId, resultDTO);
+    public void taskFeedback(@PathVariable("logId")String logId, @RequestBody TaskResultDTO resultDTO) {
+        feedbackService.taskFeedback(logId, resultDTO);
     }
 
 }

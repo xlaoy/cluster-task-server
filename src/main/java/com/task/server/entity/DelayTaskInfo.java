@@ -15,12 +15,11 @@ import java.util.Date;
 @Document(collection = "delay_task_info")
 public class DelayTaskInfo {
 
-    public static final String YES = "yes";
-    public static final String NOT = "not";
-
-    public static final String NORMAL = "normal";//正常
+    public static final String WAITING = "waiting";//待执行
+    public static final String EXECUTEING = "executeing";//执行中
     public static final String CANCEL = "cancel";//取消
     public static final String FINISH = "finish";//完成
+    public static final String FEEDBACK_TIMEOUT = "feedback_timeout";//超时反馈
 
     @Id
     private String id;
@@ -34,8 +33,6 @@ public class DelayTaskInfo {
     private String bizName;
     //业务参数
     private String bizParameters;
-    //能否执行
-    private String canExecute;
     //任务状态
     private String status;
     //创建时间
@@ -45,7 +42,7 @@ public class DelayTaskInfo {
     @JsonFormat(locale = BeanConfig.LOCALE, timezone = BeanConfig.TIMEZONE, pattern = BeanConfig.YYYY_MM_DD_HH_MM_SS)
     private Date executeTime;
     //执行次数
-    private Integer exceCount;
+    private Long exceCount;
     //备注
     private String remark;
 }

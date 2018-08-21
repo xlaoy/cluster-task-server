@@ -41,8 +41,6 @@ public class TaskRegisterService {
     @Autowired
     private IDelayTaskInfoRepository delayTaskInfoRepository;
     @Autowired
-    private MongoTemplate mongoTemplate;
-    @Autowired
     private ObjectMapper mapper;
 
     /**
@@ -159,20 +157,6 @@ public class TaskRegisterService {
             logger.error(resultDTO.getMessage());
             return resultDTO;
         }
-        for(DelayRegisterDTO.DelayInfo delayInfo : delayInfoList) {
-            Query query = Query.query(Criteria.where("executeServiceName").is(delayInfo.getExecuteServiceName())
-                    .and("bizName").is(delayInfo.getBizName())
-                    .and("bizParameters").is(delayInfo.getBizParameters())
-                    .and("executeTime").is(delayInfo.getExecuteTime())
-                    .and("status").is(DelayTaskInfo.NORMAL)
-            );
-            if(mongoTemplate.exists(query, DelayTaskInfo.class)){
-                resultDTO.setCode(DelayRegisterResultDTO.TASK_EXISTS);
-                resultDTO.setMessage("任务已存在，不能重复注册，任务参数：" + delayInfo.toString());
-                logger.error(resultDTO.getMessage());
-                return resultDTO;
-            }
-        }
         List<String> taskIdList = new ArrayList<>();
         for(DelayRegisterDTO.DelayInfo delayInfo : delayInfoList) {
             DelayTaskInfo taskInfo = new DelayTaskInfo();
@@ -181,11 +165,10 @@ public class TaskRegisterService {
             taskInfo.setExecuteServiceName(delayInfo.getExecuteServiceName());
             taskInfo.setBizName(delayInfo.getBizName());
             taskInfo.setBizParameters(delayInfo.getBizParameters());
-            taskInfo.setCanExecute(DelayTaskInfo.YES);
-            taskInfo.setStatus(DelayTaskInfo.NORMAL);
+            taskInfo.setStatus(DelayTaskInfo.WAITING);
             taskInfo.setCreateTime(new Date());
             taskInfo.setExecuteTime(delayInfo.getExecuteTime());
-            taskInfo.setExceCount(0);
+            taskInfo.setExceCount(0l);
             delayTaskInfoRepository.save(taskInfo);
             taskIdList.add(taskInfo.getId());
         }
@@ -207,8 +190,7 @@ public class TaskRegisterService {
             Optional<DelayTaskInfo> optional = delayTaskInfoRepository.findById(taskId);
             if(optional.isPresent()) {
                 DelayTaskInfo taskInfo = optional.get();
-                if(DelayTaskInfo.NORMAL.equals(taskInfo.getStatus())) {
-                    taskInfo.setCanExecute(DelayTaskInfo.NOT);
+                if(DelayTaskInfo.WAITING.equals(taskInfo.getStatus())) {
                     taskInfo.setStatus(DelayTaskInfo.CANCEL);
                     taskInfo.setRemark("业务系统请求取消");
                     delayTaskInfoRepository.save(taskInfo);

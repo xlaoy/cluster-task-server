@@ -1,6 +1,6 @@
 package com.task.server.task;
 
-import com.task.server.service.DelayTaskArchiveService;
+import com.task.server.service.DelayTaskSupport;
 import com.task.server.service.TaskExecuteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,7 +15,7 @@ public class TaskJob {
     @Autowired
     private TaskExecuteService executeService;
     @Autowired
-    private DelayTaskArchiveService delayTaskArchiveService;
+    private DelayTaskSupport delayTaskSupport;
 
     /**
      * 执行定时任务
@@ -28,9 +28,9 @@ public class TaskJob {
     /**
      * 执行延迟任务
      */
-    @Scheduled(fixedDelay = 100)
+    @Scheduled(fixedDelay = 1000)
     public void executeDelayTask() {
-
+        executeService.executeDelayTask();
     }
 
     /**
@@ -39,7 +39,16 @@ public class TaskJob {
      */
     @Scheduled(cron = "0 0/30 * * * ? ")
     public void delayTaskArchive() {
-        delayTaskArchiveService.archive();
+        delayTaskSupport.archive();
+    }
+
+    /**
+     * 延迟任务反馈超时
+     * 每15分钟跑一次
+     */
+    @Scheduled(cron = "0 0/15 * * * ? ")
+    public void delayTaskFeedbackTimeout() {
+        delayTaskSupport.feedbackTimeout();
     }
 
 }

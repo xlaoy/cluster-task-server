@@ -1,5 +1,6 @@
 package com.task.server.service;
 
+import com.task.server.config.ClientURL;
 import com.task.server.dto.SecheduledRequestDTO;
 import com.task.server.entity.SecheduledTaskInfo;
 import com.task.server.entity.TaskExecuteLog;
@@ -26,8 +27,6 @@ public class SecheduledRunnable implements Runnable {
     private RestTemplate restTemplate;
     private ITaskExecuteLogRepository executeLogRepository;
     private Long exceCount;
-
-    private static final String TASK_CLIENT_EXECUTE_URL = "/task_client/execute_secheduled_task";
 
     public SecheduledRunnable() {
     }
@@ -79,7 +78,7 @@ public class SecheduledRunnable implements Runnable {
             requestDTO.setLogId(logId);
             requestDTO.setParameters("{}");
             executeLog.setRequestBody(requestDTO.toString());
-            URI uri = URI.create("http://" + instance.getHost() + ":" + instance.getPort() + TASK_CLIENT_EXECUTE_URL);
+            URI uri = URI.create("http://" + instance.getHost() + ":" + instance.getPort() + ClientURL.EXECUTE_SECHEDULED_URL);
             executeLog.setSendRequestTime(new Date());
             try {
                 restTemplate.postForObject(uri, requestDTO, String.class);

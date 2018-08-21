@@ -1,6 +1,6 @@
 package com.task.server.service;
 
-import com.task.server.dto.SecheduledResultDTO;
+import com.task.server.dto.TaskResultDTO;
 import com.task.server.entity.TaskExecuteLog;
 import com.task.server.repository.ITaskExecuteLogRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ public class TaskFeedbackService {
     private ITaskExecuteLogRepository executeLogRepository;
 
 
-    public void secheduledFeedback(String logId, SecheduledResultDTO resultDTO) {
+    public void taskFeedback(String logId, TaskResultDTO resultDTO) {
         Optional<TaskExecuteLog> optional = executeLogRepository.findById(logId);
         if(optional.isPresent()) {
             TaskExecuteLog executeLog = optional.get();
