@@ -15,6 +15,11 @@ spring:
       database: task
       username: task
       password: ["1","2","3","4","5","6"]
+  thymeleaf:
+    prefix: classpath:/pages/
+    suffix: .html
+    cache: false
+    mode: HTML5
 
 #打开actuator的所有端点
 management:

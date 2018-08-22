@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>应用设置</title>
+    <script th:src="@{/js/jquery-3.3.1.min.js}" charset="utf-8"></script>
+    <style>
+        .cdata {width: 100%; text-align: center; border-collapse: collapse;}
+        .cdata td span {padding-left: 20px; padding-right: 20px;}
+        .cdata tr td { border:1px solid #a8a8a8; word-break: keep-all;white-space:nowrap; line-height: 40px;}
+        .utitle {display: block; width: 200px; height: 80px; line-height: 80px; text-align: center; font-size: 28px; color: #fbfffb; float: left; cursor: pointer;}
+        .utitle:hover {background: #ffd06d; }
+        .navbar-default {display: none}
+    </style>
+</head>
+<body style="margin: 0; padding: 0">
+<div style="width: 100%; height: 80px; background: #ff6620">
+    <div id="app_menu" class="utitle">
+        应用列表
+    </div>
+    <div id="eureka_menu" class="utitle">
+        EUREKA信息
+    </div>
+</div>
+<div id="app_panl" style="padding: 20px;">
+    <table class="cdata">
+        <tr>
+            <td width="15%" style="font-weight: bold">服务名称</td>
+            <td width="25%" style="font-weight: bold">实例ID</td>
+            <td width="20%" style="font-weight: bold">主机</td>
+            <td width="10%" style="font-weight: bold">端口</td>
+            <td width="10%" style="font-weight: bold">应用版本</td>
+            <td width="10%" style="font-weight: bold">状态</td>
+            <td width="10%" style="font-weight: bold">操作</td>
+        </tr>
+        <tr th:each="instance : ${instanceList}">
+            <td th:if="${instance.rowspan > 0}" th:text="${instance.appName}" th:rowspan="${instance.rowspan}"></td>
+            <td th:text="${instance.instanceId}"></td>
+            <td th:text="${instance.hostName}"></td>
+            <td th:text="${instance.port}"></td>
+            <td th:text="${instance.version}"></td>
+            <td th:text="${instance.status}" th:style="${instance.status == 'UP'} ? 'color: #2ec872' : 'color: #ff3631'"></td>
+            <td>
+                <input class="inp" th:data="${instance.instanceId}" status="1" type="button" value=" 上线 " th:if="${instance.status != 'UP'}"/>
+                <input class="inp" th:data="${instance.instanceId}" status="0" type="button" value=" 下线 " th:if="${instance.status == 'UP'}"/>
+            </td>
+        </tr>
+    </table>
+</div>
+<div style="clear: both">
+    <div id="erueka_panl" style="display: none"></div>
+</div>
+</body>
+<script type="text/javascript">
+$(document).ready(function(){
+
+    $("#app_menu").css("color", "black");
+
+    $("#app_menu").on("click", function () {
+        location = "/index";
+    });
+
+    $("#eureka_menu").on("click", function () {
+        $("#app_menu").css("color", "#fbfffb");
+        $("#eureka_menu").css("color", "black");
+        $("#app_panl").css("display", "none");
+        $("#erueka_panl").load("/");
+        $("#erueka_panl").show();
+    });
+
+    $(".inp").on("click", function () {
+        var instanceId = $(this).attr("data");
+        var status = $(this).attr("status");
+        var message = "";
+        if(status == 1) {
+            message = "确认要将该服务上线吗?"
+        } else {
+            message = "确认要将该服务下线吗?"
+        }
+        if(confirm(message)) {
+            send(instanceId, status);
+            //console.log(instanceId, status);
+        }
+    })
+
+    function send(instanceId, status) {
+        var parma = {
+            "instanceId": instanceId,
+            "status": status
+        };
+        $.ajax({
+            async: false,
+            type: "POST",
+            url: "/system/setApplicationStatus",
+            contentType: "application/json",
+            data: JSON.stringify(parma),
+            success: function(response) {
+                alert("设置成功");
+                location = "/index";
+            },
+            error: function(response) {
+                alert("设置失败");
+                location = "/index";
+            }
+        });
+    }
+
+});
+</script>
+</html>
