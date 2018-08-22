@@ -15,6 +15,9 @@ import java.util.Date;
 @Document(collection = "secheduled_task_piece")
 public class SecheduledTaskPiece {
 
+    public static final String NORMAL = "normal";
+    public static final String DELETE = "delete";
+
     @Id
     private String id;
     //创建时间
@@ -24,4 +27,6 @@ public class SecheduledTaskPiece {
     private String taskId;
     //自定义参数
     private String parameters;
+    //自定义参数
+    private String status;
 }
