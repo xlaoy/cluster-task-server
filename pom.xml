@@ -40,6 +40,10 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
@@ -119,8 +123,15 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>**/*.yml</include>
-                    <include>**/*.xml</include>
+                    <include>**/*.js</include>
                     <include>**/*.html</include>
+                    <include>**/*.css</include>
+                    <include>**/*.gif</include>
+                    <include>**/*.eot</include>
+                    <include>**/*.svg</include>
+                    <include>**/*.ttf</include>
+                    <include>**/*.woff</include>
+                    <include>**/*.png</include>
                 </includes>
                 <filtering>true</filtering>
             </resource>

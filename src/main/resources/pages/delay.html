@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title>任务中心</title>
+    <script th:src="@{/js/jquery-3.3.1.min.js}" charset="utf-8"></script>
+    <script th:src="@{/layui/layui.js}" charset="utf-8"></script>
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}"  media="all">
+</head>
+<body class="layui-layout-body">
+
+<div class="layui-layout layui-layout-admin">
+
+    <div class="layui-header">
+        <div class="layui-logo">携华任务管理中心</div>
+        <ul class="layui-nav layui-layout-left">
+            <li class="layui-nav-item"><a th:href="@{/index}">定时任务</a></li>
+            <li class="layui-nav-item layui-this"><a th:href="@{/delay}">延迟任务</a></li>
+            <li class="layui-nav-item"><a th:href="@{/log}">任务日志</a></li>
+        </ul>
+    </div>
+
+    <div style="margin: 20px;">
+        <form class="layui-form">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">归档：</label>
+                    <div class="layui-input-inline">
+                        <select name="archive">
+                            <option value="0">未归档</option>
+                            <option value="1">已归档</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">任务ID：</label>
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="taskId" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">业务名称：</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="bizName" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">业务参数：</label>
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="bizParameters"  autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline">
+                        <button class="layui-btn" lay-submit="" lay-filter="query">查询</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <table class="layui-table" lay-data="{url:'/task_server/get_delay_task_pager', page:true, id:'delayTable'}" >
+            <thead>
+            <tr>
+                <th lay-data="{field:'id'}">任务ID</th>
+                <th lay-data="{field:'registerServiceName'}">注册服务名称</th>
+                <th lay-data="{field:'registerHostAndPort'}">注册机器</th>
+                <th lay-data="{field:'executeServiceName'}">执行服务名称</th>
+                <th lay-data="{field:'bizName'}">业务名称</th>
+                <th lay-data="{field:'bizParameters'}">业务参数</th>
+                <th lay-data="{field:'status'}">任务状态</th>
+                <th lay-data="{field:'createTime'}">创建时间</th>
+                <th lay-data="{field:'executeTime'}">执行时间</th>
+                <th lay-data="{field:'exceCount'}">执行次数</th>
+                <th lay-data="{field:'remark'}">备注</th>
+
+            </tr>
+            </thead>
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+
+<script>
+
+    //JavaScript代码区域
+    var element;
+    layui.use('element', function(){
+        element= layui.element;
+    });
+
+    var delay_table;
+    layui.use('table', function(){
+        delay_table = layui.table;
+    });
+
+    layui.use('form', function(){
+        var form = layui.form;
+        //监听提交
+        form.on('submit(query)', function(data){
+            delay_table.reload('delayTable', {
+                where: {
+                    taskId: data.field.taskId,
+                    archive: data.field.archive,
+                    bizName: data.field.bizName,
+                    bizParameters: data.field.bizParameters
+                },page: {
+                    curr: 1
+                }
+            });
+            return false;
+        });
+    });
+
+</script>
+
+</html>
