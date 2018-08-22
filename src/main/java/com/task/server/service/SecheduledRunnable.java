@@ -1,6 +1,5 @@
 package com.task.server.service;
 
-import com.netflix.loadbalancer.ILoadBalancer;
 import com.task.server.config.ClientURL;
 import com.task.server.dto.SecheduledRequestDTO;
 import com.task.server.entity.SecheduledTaskInfo;
@@ -10,6 +9,7 @@ import com.task.server.repository.ISecheduledTaskPieceRepository;
 import com.task.server.repository.ITaskExecuteLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
@@ -144,27 +144,31 @@ public class SecheduledRunnable implements Runnable {
         }
         List<ServiceInstance> noChooseIndex = this.getNoChooseService(serviceList);
         for(SecheduledTaskPiece taskPiece : pieceList) {
+            TaskExecuteLog pieceLog = new TaskExecuteLog();
+            BeanUtils.copyProperties(executeLog, pieceLog);
+            String logId = UUID.randomUUID().toString().replace("-", "");
+            pieceLog.setId(logId);
             ServiceInstance instance = this.chooseService(noChooseIndex, serviceList);
-            executeLog.setPieceId(taskPiece.getId());
-            executeLog.setTargetHostPort(instance.getHost() + ":" + instance.getPort());
+            pieceLog.setPieceId(taskPiece.getId());
+            pieceLog.setTargetHostPort(instance.getHost() + ":" + instance.getPort());
             SecheduledRequestDTO requestDTO = new SecheduledRequestDTO();
             requestDTO.setClassName(taskInfo.getClassName());
-            requestDTO.setLogId(executeLog.getId());
+            requestDTO.setLogId(pieceLog.getId());
             requestDTO.setParameters(taskPiece.getParameters());
-            executeLog.setRequestBody(requestDTO.toString());
+            pieceLog.setRequestBody(requestDTO.toString());
             URI uri = URI.create("http://" + instance.getHost() + ":" + instance.getPort() + ClientURL.EXECUTE_SECHEDULED_URL);
-            executeLog.setSendRequestTime(new Date());
+            pieceLog.setSendRequestTime(new Date());
             try {
                 restTemplate.postForObject(uri, requestDTO, String.class);
-                executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_SUCCESS);
+                pieceLog.setStatus(TaskExecuteLog.SEND_REQUEST_SUCCESS);
             } catch (Exception e) {
-                logger.error("发送定时任务请求返回异常，logId=" + executeLog.getId(), e);
-                executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
-                executeLog.setResult(e.getMessage());
+                logger.error("发送定时任务请求返回异常，logId=" + pieceLog.getId(), e);
+                pieceLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
+                pieceLog.setResult(e.getMessage());
             } finally {
-                executeLog.setReceiveResponseTime(new Date());
+                pieceLog.setReceiveResponseTime(new Date());
             }
-            executeLogRepository.save(executeLog);
+            executeLogRepository.save(pieceLog);
         }
     }
 
