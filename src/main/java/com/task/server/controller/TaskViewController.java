@@ -27,4 +27,9 @@ public class TaskViewController {
         return "log";
     }
 
+    @GetMapping("/blackip")
+    public String blackip() {
+        return "blackip";
+    }
+
 }

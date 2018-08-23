@@ -3,6 +3,7 @@ package com.task.server.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.task.server.config.BeanConfig;
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -13,6 +14,7 @@ import java.util.Date;
  */
 @Data
 @Document(collection = "secheduled_execute_log")
+@ToString
 public class TaskExecuteLog {
 
     public static final String SEND_REQUEST_SUCCESS= "send_request_success";

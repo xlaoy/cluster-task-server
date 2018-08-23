@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /**
  * Created by Administrator on 2018/8/20 0020.
  */
-//@Component
+@Component
 public class TaskJob {
 
     @Autowired

@@ -18,6 +18,7 @@
             <li class="layui-nav-item layui-this"><a th:href="@{/index}">定时任务</a></li>
             <li class="layui-nav-item"><a th:href="@{/delay}">延时任务</a></li>
             <li class="layui-nav-item"><a th:href="@{/log}">任务日志</a></li>
+            <li class="layui-nav-item"><a th:href="@{/blackip}">IP黑名单</a></li>
         </ul>
     </div>
 
@@ -51,8 +52,8 @@
                 <th lay-data="{field:'serviceName'}">服务名称</th>
                 <th lay-data="{field:'className'}">类名</th>
                 <th lay-data="{field:'cron'}">表达式</th>
-                <th lay-data="{field:'status'}">任务状态</th>
-                <th lay-data="{field:'activation'}">激活状态</th>
+                <th lay-data="{field:'status', templet: '#statusTpl'}">任务状态</th>
+                <th lay-data="{field:'activation', templet: '#activationTpl'}">激活状态</th>
                 <th lay-data="{field:'nextExceTime'}">下次执行时间</th>
                 <th lay-data="{field:'exceCount'}">执行次数</th>
                 <th lay-data="{toolbar:'#ztoolbar'}">操作</th>
@@ -63,6 +64,20 @@
             <a class="layui-btn layui-btn-xs" lay-event="open">开启</a>
             <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="close">关闭</a>
             <a class="layui-btn layui-btn-xs" lay-event="piece">任务分片</a>
+        </script>
+        <script type="text/html" id="statusTpl">
+            {{#  if(d.status === 'disable'){ }}
+            <span style="color: #f5441e;">{{ d.status }}</span>
+            {{#  } else { }}
+            <span style="color: #1eab22;">{{ d.status }}</span>
+            {{#  } }}
+        </script>
+        <script type="text/html" id="activationTpl">
+            {{#  if(d.activation === 'invalid'){ }}
+            <span style="color: #f5441e;">{{ d.activation }}</span>
+            {{#  } else { }}
+            <span style="color: #1eab22;">{{ d.activation }}</span>
+            {{#  } }}
         </script>
     </div>
 

@@ -1,5 +1,6 @@
 package com.task.server.controller;
 
+import com.task.server.dto.BlackIPDTO;
 import com.task.server.dto.SecheduledTaskPieceDTO;
 import com.task.server.entity.SecheduledTaskPiece;
 import com.task.server.service.TaskServerService;
@@ -80,6 +81,25 @@ public class TaskServerController {
         serverService.updateDelayExectime(taskId, map.get("exectime").toString());
     }
 
+
+    /**
+     * 添加黑名单
+     * @param dto
+     */
+    @PostMapping("/task_server/add_black_ip")
+    public void addBlackIp(@RequestBody BlackIPDTO dto) {
+        serverService.addBlackIp(dto);
+    }
+
+    /**
+     * 删除黑名单
+     * @param blackIpId
+     */
+    @PostMapping("/task_server/del_black_ip/{blackIpId}")
+    public void delBlackIp(@PathVariable("blackIpId")String blackIpId) {
+        serverService.delBlackIp(blackIpId);
+    }
+
     /**
      * 定时任务分页
      * @param page
@@ -135,6 +155,23 @@ public class TaskServerController {
                               @RequestParam(name = "startTime", required = false)String startTime,
                               @RequestParam(name = "endTime", required = false)String endTime) throws Exception {
         return serverService.taskLogPager(page, limit, taskId, exceCount, startTime, endTime);
+    }
+
+    /**
+     * 黑名单分页
+     * @param page
+     * @param limit
+     * @param serviceName
+     * @param host
+     * @return
+     * @throws Exception
+     */
+    @GetMapping("/task_server/get_black_ip_pager")
+    public Map taskBlackIPPager(@RequestParam(name = "page", required = true, defaultValue = "1")Integer page,
+                            @RequestParam(name = "limit", required = true, defaultValue = "20")Integer limit,
+                            @RequestParam(name = "serviceName", required = false)String serviceName,
+                            @RequestParam(name = "host", required = false)String host) throws Exception {
+        return serverService.taskBlackIPPager(page, limit, serviceName, host);
     }
 
 }

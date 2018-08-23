@@ -18,6 +18,7 @@
             <li class="layui-nav-item"><a th:href="@{/index}">定时任务</a></li>
             <li class="layui-nav-item"><a th:href="@{/delay}">延时任务</a></li>
             <li class="layui-nav-item layui-this"><a th:href="@{/log}">任务日志</a></li>
+            <li class="layui-nav-item"><a th:href="@{/blackip}">IP黑名单</a></li>
         </ul>
     </div>
 
@@ -62,7 +63,6 @@
                 <th lay-data="{field:'pieceId'}">分片ID</th>
                 <th lay-data="{field:'taskType'}">任务类型</th>
                 <th lay-data="{field:'targetHostPort'}">执行机器</th>
-                <th lay-data="{field:'bizParameters'}">业务参数</th>
                 <th lay-data="{field:'status'}">执行状态</th>
                 <th lay-data="{field:'exceCount'}">执行次数</th>
                 <th lay-data="{field:'beginTime'}">开始时间</th>

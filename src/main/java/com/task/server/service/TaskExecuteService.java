@@ -3,13 +3,10 @@ package com.task.server.service;
 import com.mongodb.client.result.UpdateResult;
 import com.task.server.entity.DelayTaskInfo;
 import com.task.server.entity.SecheduledTaskInfo;
-import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ISecheduledTaskPieceRepository;
 import com.task.server.repository.ITaskExecuteLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -33,8 +30,6 @@ public class TaskExecuteService {
     @Autowired
     private MongoTemplate mongoTemplate;
     @Autowired
-    private LoadBalancerClient loadBalancerClient;
-    @Autowired
     private RestTemplate restTemplate;
     @Autowired
     private ThreadPoolTaskExecutor sendRequestkExecutor;
@@ -43,7 +38,7 @@ public class TaskExecuteService {
     @Autowired
     private ISecheduledTaskPieceRepository taskPieceRepository;
     @Autowired
-    private DiscoveryClient discoveryClient;
+    private ClientServiceChoose clientChoose;
 
     /**
      * 执行定时任务
@@ -66,8 +61,7 @@ public class TaskExecuteService {
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, SecheduledTaskInfo.class);
             if(result.getModifiedCount() == 1) {
                 SecheduledRunnable runnable = new SecheduledRunnable();
-                runnable.setLoadBalancerClient(loadBalancerClient);
-                runnable.setDiscoveryClient(discoveryClient);
+                runnable.setClientChoose(clientChoose);
                 runnable.setRestTemplate(restTemplate);
                 runnable.setExecuteLogRepository(executeLogRepository);
                 runnable.setTaskPieceRepository(taskPieceRepository);
@@ -97,7 +91,7 @@ public class TaskExecuteService {
             UpdateResult result = mongoTemplate.updateFirst(updateQuery, update, DelayTaskInfo.class);
             if(result.getModifiedCount() == 1) {
                 DelayRunnable runnable = new DelayRunnable();
-                runnable.setLoadBalancerClient(loadBalancerClient);
+                runnable.setClientChoose(clientChoose);
                 runnable.setRestTemplate(restTemplate);
                 runnable.setExecuteLogRepository(executeLogRepository);
                 runnable.setTaskInfo(taskInfo);

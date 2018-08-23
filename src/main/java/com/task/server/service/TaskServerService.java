@@ -1,8 +1,10 @@
 package com.task.server.service;
 
 import com.task.server.config.BeanConfig;
+import com.task.server.dto.BlackIPDTO;
 import com.task.server.dto.SecheduledTaskPieceDTO;
 import com.task.server.entity.*;
+import com.task.server.repository.IBlackIPRepository;
 import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ISecheduledTaskInfoRepository;
 import com.task.server.repository.ISecheduledTaskPieceRepository;
@@ -32,6 +34,8 @@ public class TaskServerService {
     private ISecheduledTaskInfoRepository secheduledTaskInfoRepository;
     @Autowired
     private IDelayTaskInfoRepository delayTaskInfoRepository;
+    @Autowired
+    private IBlackIPRepository blackIPRepository;
     @Autowired
     private MongoTemplate mongoTemplate;
 
@@ -94,6 +98,29 @@ public class TaskServerService {
         }
         taskInfo.setExecuteTime(new SimpleDateFormat(BeanConfig.YYYY_MM_DD_HH_MM_SS).parse(exectime));
         delayTaskInfoRepository.save(taskInfo);
+    }
+
+    public void addBlackIp(BlackIPDTO dto) {
+        String serviceName = dto.getServiceName();
+        String host = dto.getHost();
+        String port = dto.getPort();
+        serviceName = serviceName.trim();
+        serviceName = serviceName.toUpperCase();
+        host = host.trim();
+        port = port.trim();
+        if(!CollectionUtils.isEmpty(blackIPRepository.findByServiceNameAndHostAndPort(serviceName, host, port))) {
+            throw new RuntimeException("黑名单已存在");
+        }
+        BlackIP blackIP = new BlackIP();
+        blackIP.setServiceName(serviceName);
+        blackIP.setHost(host);
+        blackIP.setPort(port);
+        blackIP.setCreateTime(new Date());
+        blackIPRepository.save(blackIP);
+    }
+
+    public void delBlackIp(String blackIpId) {
+        blackIPRepository.deleteById(blackIpId);
     }
 
     public Map getSecheduledTaskPieceList(String taskId) {
@@ -222,6 +249,24 @@ public class TaskServerService {
         Query query = Query.query(criteria).with(pageRequest);
         long count = mongoTemplate.count(query, TaskExecuteLog.class);
         List<TaskExecuteLog> list = mongoTemplate.find(query, TaskExecuteLog.class);
+        return pageMap(count, list);
+    }
+
+    public Map taskBlackIPPager(Integer page, Integer limit, String serviceName, String host) {
+        Criteria criteria = new Criteria();
+        if(!StringUtils.isEmpty(serviceName)) {
+            criteria.and("serviceName").is(serviceName);
+        }
+        if(!StringUtils.isEmpty(host)) {
+            criteria.and("host").is(host);
+        }
+        if(page < 1) {
+            page = 1;
+        }
+        Pageable pageRequest = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "createTime"));
+        Query query = Query.query(criteria).with(pageRequest);
+        long count = mongoTemplate.count(query, BlackIP.class);
+        List<BlackIP> list = mongoTemplate.find(query, BlackIP.class);
         return pageMap(count, list);
     }
 

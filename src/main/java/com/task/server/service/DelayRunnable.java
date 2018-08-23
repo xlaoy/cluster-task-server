@@ -1,18 +1,13 @@
 package com.task.server.service;
 
-import com.mongodb.client.result.UpdateResult;
 import com.task.server.config.ClientURL;
 import com.task.server.dto.DelayRequestDTO;
-import com.task.server.dto.SecheduledRequestDTO;
 import com.task.server.entity.DelayTaskInfo;
-import com.task.server.entity.SecheduledTaskInfo;
 import com.task.server.entity.TaskExecuteLog;
-import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ITaskExecuteLogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -31,7 +26,7 @@ public class DelayRunnable implements Runnable {
     private Logger logger = LoggerFactory.getLogger(DelayRunnable.class);
 
     private DelayTaskInfo taskInfo;
-    private LoadBalancerClient loadBalancerClient;
+    private ClientServiceChoose clientChoose;
     private RestTemplate restTemplate;
     private ITaskExecuteLogRepository executeLogRepository;
     private Long exceCount;
@@ -49,8 +44,8 @@ public class DelayRunnable implements Runnable {
         this.taskInfo = taskInfo;
     }
 
-    public void setLoadBalancerClient(LoadBalancerClient loadBalancerClient) {
-        this.loadBalancerClient = loadBalancerClient;
+    public void setClientChoose(ClientServiceChoose clientChoose) {
+        this.clientChoose = clientChoose;
     }
 
     public void setExecuteLogRepository(ITaskExecuteLogRepository executeLogRepository) {
@@ -80,16 +75,13 @@ public class DelayRunnable implements Runnable {
         executeLog.setTaskType(TaskExecuteLog.DELAY);
         ServiceInstance instance = null;
         try {
-            instance = this.loadBalancerClient.choose(taskInfo.getExecuteServiceName().toUpperCase());
+            instance = this.clientChoose.getClientServiceInstance(taskInfo.getExecuteServiceName());
         } catch (Exception e) {
-            logger.error(taskInfo.getExecuteServiceName() + " 选择服务实例异常，logId=" + logId, e);
+            logger.error(e.getMessage() + " ，logId=" + logId, e);
             executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
-            executeLog.setResult(taskInfo.getExecuteServiceName() + " 选择服务实例异常");
+            executeLog.setResult(e.getMessage());
         }
-        if(instance == null) {
-            executeLog.setStatus(TaskExecuteLog.SEND_REQUEST_FAILURE);
-            executeLog.setResult(taskInfo.getExecuteServiceName() + " 没有发现可用服务实例");
-        } else {
+        if(instance != null)  {
             executeLog.setTargetHostPort(instance.getHost() + ":" + instance.getPort());
             DelayRequestDTO requestDTO = new DelayRequestDTO();
             requestDTO.setLogId(logId);
