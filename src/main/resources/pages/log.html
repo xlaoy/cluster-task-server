@@ -16,7 +16,7 @@
         <div class="layui-logo">携华任务管理中心</div>
         <ul class="layui-nav layui-layout-left">
             <li class="layui-nav-item"><a th:href="@{/index}">定时任务</a></li>
-            <li class="layui-nav-item"><a th:href="@{/delay}">延迟任务</a></li>
+            <li class="layui-nav-item"><a th:href="@{/delay}">延时任务</a></li>
             <li class="layui-nav-item layui-this"><a th:href="@{/log}">任务日志</a></li>
         </ul>
     </div>
@@ -81,48 +81,43 @@
 </body>
 
 <script>
+var element;
+var table;
+var laydate;
+var form;
+layui.use(['element', 'table', 'laydate', 'form'], function(){
+    element= layui.element;
+    table = layui.table;
+    laydate = layui.laydate;
+    form = layui.form;
 
-    //JavaScript代码区域
-    var element;
-    layui.use('element', function(){
-        element= layui.element;
+    laydate.render({
+        elem: '#startTimeID',
+        type: 'datetime'
     });
 
-    var delay_table;
-    layui.use('table', function(){
-        delay_table = layui.table;
-
+    laydate.render({
+        elem: '#endTimeID',
+        type: 'datetime'
     });
 
-    layui.use('laydate', function(){
-        var laydate = layui.laydate;
-        laydate.render({
-            elem: '#startTimeID',
-            type: 'datetime'
+
+    //监听提交
+    form.on('submit(query)', function(data){
+        table.reload('logTable', {
+            where: {
+                taskId: data.field.taskId,
+                exceCount: data.field.exceCount,
+                startTime: data.field.startTime,
+                endTime: data.field.endTime
+            },page: {
+                curr: 1
+            }
         });
-        laydate.render({
-            elem: '#endTimeID',
-            type: 'datetime'
-        });
+        return false;
     });
 
-    layui.use('form', function(){
-        var form = layui.form;
-        //监听提交
-        form.on('submit(query)', function(data){
-            delay_table.reload('logTable', {
-                where: {
-                    taskId: data.field.taskId,
-                    exceCount: data.field.exceCount,
-                    startTime: data.field.startTime,
-                    endTime: data.field.endTime
-                },page: {
-                    curr: 1
-                }
-            });
-            return false;
-        });
-    });
+});
 
 </script>
 

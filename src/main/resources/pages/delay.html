@@ -16,7 +16,7 @@
         <div class="layui-logo">携华任务管理中心</div>
         <ul class="layui-nav layui-layout-left">
             <li class="layui-nav-item"><a th:href="@{/index}">定时任务</a></li>
-            <li class="layui-nav-item layui-this"><a th:href="@{/delay}">延迟任务</a></li>
+            <li class="layui-nav-item layui-this"><a th:href="@{/delay}">延时任务</a></li>
             <li class="layui-nav-item"><a th:href="@{/log}">任务日志</a></li>
         </ul>
     </div>
@@ -59,7 +59,7 @@
             </div>
         </form>
 
-        <table class="layui-table" lay-data="{url:'/task_server/get_delay_task_pager', page:true, id:'delayTable'}" >
+        <table class="layui-table" lay-data="{url:'/task_server/get_delay_task_pager', page:true, id:'delayTable'}" lay-filter="wocao">
             <thead>
             <tr>
                 <th lay-data="{field:'id'}">任务ID</th>
@@ -73,47 +73,135 @@
                 <th lay-data="{field:'executeTime'}">执行时间</th>
                 <th lay-data="{field:'exceCount'}">执行次数</th>
                 <th lay-data="{field:'remark'}">备注</th>
-
+                <th lay-data="{toolbar:'#ztoolbar'}">操作</th>
             </tr>
             </thead>
         </table>
-
+        <script type="text/html" id="ztoolbar">
+            <a class="layui-btn layui-btn-xs" lay-event="updateTime">修改执行时间</a>
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="cancel">取消</a>
+        </script>
     </div>
 
 </div>
 
 </body>
 
+<div id="update_time_div" style="width: 360px; height: 70px; display: none">
+    <br>
+    <div class="layui-inline">
+        <label class="layui-form-label">运行时间：</label>
+        <div class="layui-input-inline">
+            <input type="text" name="executeTime" id="executeTime" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+</div>
+
 <script>
+//JavaScript代码区域
+var element;
+var table;
+var form;
+var laydate;
+layui.use(['element', 'form', 'laydate', 'table'], function(){
 
-    //JavaScript代码区域
-    var element;
-    layui.use('element', function(){
-        element= layui.element;
+    element= layui.element;
+    table = layui.table;
+    form = layui.form;
+    laydate = layui.laydate;
+
+    laydate.render({
+        elem: '#executeTime',
+        type: 'datetime'
     });
 
-    var delay_table;
-    layui.use('table', function(){
-        delay_table = layui.table;
-    });
-
-    layui.use('form', function(){
-        var form = layui.form;
-        //监听提交
-        form.on('submit(query)', function(data){
-            delay_table.reload('delayTable', {
-                where: {
-                    taskId: data.field.taskId,
-                    archive: data.field.archive,
-                    bizName: data.field.bizName,
-                    bizParameters: data.field.bizParameters
-                },page: {
-                    curr: 1
-                }
-            });
-            return false;
+    //监听提交
+    form.on('submit(query)', function(data){
+        table.reload('delayTable', {
+            where: {
+                taskId: data.field.taskId,
+                archive: data.field.archive,
+                bizName: data.field.bizName,
+                bizParameters: data.field.bizParameters
+            },page: {
+                curr: 1
+            }
         });
+        return false;
     });
+
+    //监听工具条
+    table.on('tool(wocao)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'cancel'){
+            if(data.status != 'waiting') {
+                layer.msg('不是待执行状态');
+            } else {
+                layer.confirm('确定要取消任务吗？', function(index){
+                    layer.close(index);
+                    cancel(data.id);
+                });
+            }
+        } else if(obj.event === 'updateTime'){
+            if(data.status != 'waiting') {
+                layer.msg('不是待执行状态');
+            } else {
+                layer.open({
+                    type: 1,
+                    title: '修改运行时间',
+                    btn: ['保存'],
+                    content: $('#update_time_div'),
+                    yes: function(index, layero){
+                        saveUpdateTime(data.id);
+                    }
+                });
+            }
+        }
+    });
+
+});
+
+function saveUpdateTime(taskId) {
+    var time = $("#executeTime").val();
+    if(time == null || time == '') {
+        layer.msg('时间不能为空');
+        return;
+    }
+    layer.closeAll();
+    $.ajax({
+        type: "POST",
+        url: "/task_server/update_delay_exectime/" + taskId,
+        contentType: "application/json",
+        data: JSON.stringify({exectime: time}),
+        success: function(response) {
+            table.reload('delayTable');
+        },
+        error: function(response) {
+            layer.msg('设置失败');
+            table.reload('delayTable');
+        }
+    });
+
+}
+
+function cancel(taskId) {
+    var index = layer.load(1);
+    $.ajax({
+        type: "POST",
+        url: "/task_server/cancel_delay_task_by_hand/" + taskId,
+        contentType: "application/json",
+        data: JSON.stringify({}),
+        success: function(response) {
+            table.reload('delayTable');
+            layer.close(index);
+        },
+        error: function(response) {
+            layer.msg('设置失败');
+            table.reload('delayTable');
+            layer.close(index);
+        }
+    });
+}
 
 </script>
 

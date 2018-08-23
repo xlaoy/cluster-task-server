@@ -74,7 +74,7 @@ public class SecheduledRunnable implements Runnable {
         executeLog.setBeginTime(new Date());
         executeLog.setExceCount(exceCount);
         executeLog.setTaskType(TaskExecuteLog.SECHEDULED);
-        List<SecheduledTaskPiece> pieceList = taskPieceRepository.findByTaskId(taskInfo.getId());
+        List<SecheduledTaskPiece> pieceList = taskPieceRepository.findByTaskIdAndStatus(taskInfo.getId(), SecheduledTaskPiece.NORMAL);
         if(CollectionUtils.isEmpty(pieceList)) {
             this.exeNoPiece(executeLog);
         } else {

@@ -16,7 +16,7 @@
         <div class="layui-logo">携华任务管理中心</div>
         <ul class="layui-nav layui-layout-left">
             <li class="layui-nav-item layui-this"><a th:href="@{/index}">定时任务</a></li>
-            <li class="layui-nav-item"><a th:href="@{/delay}">延迟任务</a></li>
+            <li class="layui-nav-item"><a th:href="@{/delay}">延时任务</a></li>
             <li class="layui-nav-item"><a th:href="@{/log}">任务日志</a></li>
         </ul>
     </div>
@@ -70,75 +70,183 @@
 
 </body>
 
+<div id="piece_div" style="width: 700px; display: none;">
+    <br>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width: 100px;">参数：</label>
+            <div class="layui-input-inline" style="width: 250px;">
+                <input type="text" name="parameters" id="parameters" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <div class="layui-input-inline" style="width: 100px;">
+                <button class="layui-btn" onclick="addPiece()">添加分片</button>
+            </div>
+        </div>
+    </div>
+    <div style="margin: 20px;">
+        <table class="layui-table" lay-data="{url:'/task_server/get_secheduled_piece_list', page: false, id:'pieceTable'}" lay-filter="shit" >
+            <thead>
+            <tr>
+                <th lay-data="{field:'id', width: 250}">分片ID</th>
+                <th lay-data="{field:'parameters', width: 300}">参数</th>
+                <th lay-data="{toolbar:'#piecebar', width: 100}">操作</th>
+            </tr>
+            </thead>
+        </table>
+        <script type="text/html" id="piecebar">
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delpiece">删除</a>
+        </script>
+    </div>
+</div>
+
 <script>
+var pieceTaskId;
+var element;
+var table;
+var form;
+layui.use(['element', 'table', 'form'], function(){
+    element= layui.element;
+    table = layui.table;
+    form = layui.form;
 
-    //JavaScript代码区域
-    var element;
-    layui.use('element', function(){
-        element= layui.element;
-    });
-
-    var sechedule_table;
-    layui.use('table', function(){
-        sechedule_table = layui.table;
-        //监听工具条
-        sechedule_table.on('tool(nimahai)', function(obj){
-            var data = obj.data;
-            if(obj.event === 'open'){
-                if(data.status == 'enable') {
-                    layer.msg('已是开启状态');
-                } else {
+    //监听工具条
+    table.on('tool(nimahai)', function(obj){
+        var data = obj.data;
+        if(data.activation != 'activate') {
+            layer.msg('任务不是激活状态，不能操作');
+            return;
+        }
+        if(obj.event === 'open'){
+            if(data.status == 'enable') {
+                layer.msg('已是开启状态');
+            } else {
+                layer.confirm('确定要开启任务吗？', function(index){
+                    layer.close(index);
                     setSutats(data.id, 'enable');
-                }
-            } else if(obj.event === 'close'){
-                if(data.status == 'disable') {
-                    layer.msg('已是关闭状态');
-                } else {
-                    layer.confirm('确定要关闭任务吗？', function(index){
-                        layer.close(index);
-                        setSutats(data.id, 'disable');
+                });
+            }
+        } else if(obj.event === 'close'){
+            if(data.status == 'disable') {
+                layer.msg('已是关闭状态');
+            } else {
+                layer.confirm('确定要关闭任务吗？', function(index){
+                    layer.close(index);
+                    setSutats(data.id, 'disable');
+                });
+            }
+        } else if(obj.event === 'piece'){
+            layer.open({
+                type: 1,
+                title: '任务分片',
+                content: $('#piece_div'),
+                area: 'auto',
+                maxWidth: 700,
+                success: function(layero, index){
+                    pieceTaskId = data.id;
+                    table.reload('pieceTable', {
+                        where: {
+                            taskId: data.id
+                        }
                     });
-                }
-            } else if(obj.event === 'piece'){
-
-            }
-        });
-    });
-
-    function setSutats(taskId, status) {
-        var index = layer.load(1);
-        $.ajax({
-            type: "POST",
-            url: "/task_server/update_secheduled_status/" + taskId + "/" + status,
-            contentType: "application/json",
-            data: JSON.stringify({}),
-            success: function(response) {
-                sechedule_table.reload('secheduleTable');
-                layer.close(index);
-            },
-            error: function(response) {
-                layer.msg('设置失败');
-                sechedule_table.reload('secheduleTable');
-                layer.close(index);
-            }
-        });
-    }
-
-    layui.use('form', function(){
-        var form = layui.form;
-        //监听提交
-        form.on('submit(query)', function(data){
-            sechedule_table.reload('secheduleTable', {
-                where: {
-                    serviceName: data.field.serviceName,
-                    className: data.field.className
-                },page: {
-                    curr: 1
+                },
+                cancel: function (layero, index) {
+                    pieceTaskId = null;
                 }
             });
-            return false;
-        });
+        }
     });
+
+    //监听工具条
+    table.on('tool(shit)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'delpiece'){
+            layer.confirm('确定要删除分片吗？', function(index){
+                layer.close(index);
+                delPiece(data.id);
+            });
+
+        }
+    });
+
+    //监听提交
+    form.on('submit(query)', function(data){
+        table.reload('secheduleTable', {
+            where: {
+                serviceName: data.field.serviceName,
+                className: data.field.className
+            },page: {
+                curr: 1
+            }
+        });
+        return false;
+    });
+
+});
+
+function setSutats(taskId, status) {
+    var index = layer.load(1);
+    $.ajax({
+        type: "POST",
+        url: "/task_server/update_secheduled_status/" + taskId + "/" + status,
+        contentType: "application/json",
+        data: JSON.stringify({}),
+        success: function(response) {
+            table.reload('secheduleTable');
+            layer.close(index);
+        },
+        error: function(response) {
+            layer.msg('设置失败');
+            table.reload('secheduleTable');
+            layer.close(index);
+        }
+    });
+}
+
+function addPiece() {
+    var parameters = $('#parameters').val();
+    if(parameters == null || parameters == '') {
+        return;
+    }
+    var index = layer.load(1);
+    $.ajax({
+        type: "POST",
+        url: "/task_server/add_secheduled_piece",
+        contentType: "application/json",
+        data: JSON.stringify({
+            taskId: pieceTaskId,
+            parameters: parameters
+        }),
+        success: function(response) {
+            layer.close(index);
+            $('#parameters').val("");
+            table.reload('pieceTable');
+        },
+        error: function(response) {
+            layer.close(index);
+            layer.msg('添加失败');
+        }
+    });
+}
+
+function delPiece(pieceId) {
+    var index = layer.load(1);
+    $.ajax({
+        type: "POST",
+        url: "/task_server/del_secheduled_piece/" + pieceId,
+        contentType: "application/json",
+        data: JSON.stringify({}),
+        success: function(response) {
+            layer.close(index);
+            table.reload('pieceTable');
+        },
+        error: function(response) {
+            layer.close(index);
+            layer.msg('删除失败');
+        }
+    });
+}
 
 </script>
 

@@ -12,6 +12,8 @@ import java.util.List;
 @Repository
 public interface ISecheduledTaskPieceRepository extends MongoRepository<SecheduledTaskPiece, String> {
 
-    List<SecheduledTaskPiece> findByTaskId(String taskId);
+    List<SecheduledTaskPiece> findByTaskIdAndStatus(String taskId, String status);
+
+    List<SecheduledTaskPiece> findByTaskIdAndStatusAndParameters(String taskId, String status, String parameters);
 
 }

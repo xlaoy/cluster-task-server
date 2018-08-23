@@ -3,7 +3,6 @@ package com.task.server.service;
 import com.task.server.config.BeanConfig;
 import com.task.server.dto.SecheduledTaskPieceDTO;
 import com.task.server.entity.*;
-import com.task.server.repository.IDelayTaskInfoHistoryRepository;
 import com.task.server.repository.IDelayTaskInfoRepository;
 import com.task.server.repository.ISecheduledTaskInfoRepository;
 import com.task.server.repository.ISecheduledTaskPieceRepository;
@@ -15,6 +14,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -33,35 +33,74 @@ public class TaskServerService {
     @Autowired
     private IDelayTaskInfoRepository delayTaskInfoRepository;
     @Autowired
-    private IDelayTaskInfoHistoryRepository delayTaskInfoHistoryRepository;
-    @Autowired
     private MongoTemplate mongoTemplate;
 
 
     public void addSecheduledPiece(SecheduledTaskPieceDTO pieceDTO) {
         Assert.notNull(pieceDTO.getTaskId(), "taskId不能为空");
         Assert.notNull(pieceDTO.getParameters(), "parameters不能为空");
+        Optional<SecheduledTaskInfo> optional = secheduledTaskInfoRepository.findById(pieceDTO.getTaskId());
+        if(!optional.isPresent()) {
+            throw new RuntimeException("任务不存在");
+        }
+        SecheduledTaskInfo taskInfo = optional.get();
+        if(!SecheduledTaskInfo.ACTIVATE.equals(taskInfo.getActivation())) {
+            throw new RuntimeException("任务不是激活状态");
+        }
+        String parameters = pieceDTO.getParameters();
+        parameters = parameters.trim();
+        if(!CollectionUtils.isEmpty(taskPieceRepository.findByTaskIdAndStatusAndParameters(pieceDTO.getTaskId(), SecheduledTaskPiece.NORMAL, parameters))) {
+            throw new RuntimeException("分片已存在");
+        }
         SecheduledTaskPiece taskPiece = new SecheduledTaskPiece();
         taskPiece.setStatus(SecheduledTaskPiece.NORMAL);
-        taskPiece.setParameters(pieceDTO.getParameters());
+        taskPiece.setParameters(parameters);
         taskPiece.setTaskId(pieceDTO.getTaskId());
         taskPieceRepository.save(taskPiece);
     }
 
     public void delSecheduledPiece(String pieceId) {
-
+        Optional<SecheduledTaskPiece> optional = taskPieceRepository.findById(pieceId);
+        if(!optional.isPresent()) {
+            throw new RuntimeException("分片不存在");
+        }
+        SecheduledTaskPiece taskPiece = optional.get();
+        taskPiece.setStatus(SecheduledTaskPiece.DELETE);
+        taskPieceRepository.save(taskPiece);
     }
 
     public void cancelDelayTask(String taskId) {
-
+        Optional<DelayTaskInfo> optional = delayTaskInfoRepository.findById(taskId);
+        if(!optional.isPresent()) {
+            throw new RuntimeException("任务不存在");
+        }
+        DelayTaskInfo taskInfo = optional.get();
+        if(!DelayTaskInfo.WAITING.equals(taskInfo.getStatus())) {
+            throw new RuntimeException("任务不是待执行状态");
+        }
+        taskInfo.setStatus(DelayTaskInfo.CANCEL);
+        taskInfo.setRemark("管理任务手动取消");
+        delayTaskInfoRepository.save(taskInfo);
     }
 
-    public void updateDelayExectime(String taskId, String exectime) {
-
+    public void updateDelayExectime(String taskId, String exectime) throws Exception {
+        Optional<DelayTaskInfo> optional = delayTaskInfoRepository.findById(taskId);
+        if(!optional.isPresent()) {
+            throw new RuntimeException("任务不存在");
+        }
+        DelayTaskInfo taskInfo = optional.get();
+        if(!DelayTaskInfo.WAITING.equals(taskInfo.getStatus())) {
+            throw new RuntimeException("任务不是待执行状态");
+        }
+        taskInfo.setExecuteTime(new SimpleDateFormat(BeanConfig.YYYY_MM_DD_HH_MM_SS).parse(exectime));
+        delayTaskInfoRepository.save(taskInfo);
     }
 
-    public List<SecheduledTaskPiece> getSecheduledTaskPieceList(String taskId) {
-        return null;
+    public Map getSecheduledTaskPieceList(String taskId) {
+        if(StringUtils.isEmpty(taskId)) {
+            return pageMap(1, new ArrayList());
+        }
+        return pageMap(1, taskPieceRepository.findByTaskIdAndStatus(taskId, SecheduledTaskPiece.NORMAL));
     }
 
     public void updateSecheduledStatus(String taskId, String status) {
@@ -70,6 +109,9 @@ public class TaskServerService {
             throw new RuntimeException("任务不存在");
         }
         SecheduledTaskInfo taskInfo = optional.get();
+        if(!SecheduledTaskInfo.ACTIVATE.equals(taskInfo.getActivation())) {
+            throw new RuntimeException("任务不是激活状态");
+        }
         taskInfo.setStatus(status);
         secheduledTaskInfoRepository.save(taskInfo);
     }
