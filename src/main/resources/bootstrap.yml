@@ -1,15 +1,6 @@
 spring:
   application:
     name: cluster-task-server
-  cloud:
-    config:
-      server:
-        git:
-          uri: https://github.com/xlaoy/springconfig-repo.git
-          search-paths: /
-          username: xlaoy
-          password: zhangyijun123
-        prefix: /config
 
 eureka:
   client:
